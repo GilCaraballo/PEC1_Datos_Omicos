@@ -2,22 +2,27 @@
 title: "PEC1_Datos_Omicos"
 author: "Raul"
 date: "2024-11-06"
-output: 
+output:
+  pdf_document:
+    toc: true
+    toc_depth: '3'
   html_document:
-    toc: true      # Incluir tabla de contenido
-    toc_depth: 3   # Profundidad de la tabla de contenido
-    theme: cerulean # Tema para el documento HTML
-  pdf_document: default # Salida como PDF
+    toc: true
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
 
-## R Markdown
-
-
 ```{r}
+install.packages("tinytex")
+
+```
+
+
+
+```{r, eval=FALSE}
 
 install.packages("readxl")
 if (!requireNamespace("BiocManager", quietly = TRUE))
@@ -30,6 +35,20 @@ BiocManager::install("SummarizedExperiment")
 
 # Abstract
 
+Este estudio emplea un análisis metabolómico exhaustivo para identificar biomarcadores potenciales y explorar las alteraciones metabólicas específicas en el cáncer gástrico (GC) frente a tumores benignos (BN) y controles sanos (HE). Mediante resonancia magnética nuclear (RMN), se analizaron metabolitos específicos, siguiendo un control de calidad para garantizar la robustez de los datos. Aquellos metabolitos que mostraron un porcentaje de datos faltantes menor al 10% y una desviación estándar relativa (RSD) en los controles de calidad inferior al 20% fueron incluidos en el análisis, asegurando así la precisión y consistencia de los resultados.
+
+El análisis estadístico comenzó con una exploración de la variabilidad de los metabolitos entre los diferentes grupos. Se aplicaron pruebas de homogeneidad de varianza, como el test de Bartlett, que identificó metabolitos con variabilidad significativamente distinta entre grupos (e.g., 1-Methylnicotinamide	(M4) con 𝑝<4.2×10−7 p<4.2×10−7), sugiriendo alteraciones específicas en el perfil metabólico de los pacientes con GC. Estos resultados preliminares orientaron el enfoque hacia metabolitos específicos que presentan un potencial discriminativo relevante en el contexto clínico.
+
+En la evaluación de diferencias de abundancia entre grupos, se calculó el fold change de cada metabolito, indicando aumentos significativos en ciertos metabolitos para el GC en comparación con los controles sanos y benignos. Por ejemplo, el metabolito M4 mostró un incremento significativo en cáncer gástrico respecto al control sano (HE) con un p-valor ajustado de 0.028, lo cual subraya su potencial como marcador diferencial.
+
+Para comprender mejor las relaciones entre los metabolitos y su capacidad para distinguir entre los grupos clínicos, se realizaron análisis multivariados, específicamente Análisis de Componentes Principales (PCA) y Análisis Discriminante de Mínimos Cuadrados Parciales (PLS-DA). El PCA mostró una separación clara entre los grupos HE, BN y GC, evidenciando que las muestras poseen patrones de expresión metabólica diferenciados. En el modelo PLS-DA, que permite una separación más precisa entre clases, se identificaron metabolitos como M138, M134 y M118 como altamente discriminativos, lo que sugiere que estos compuestos pueden estar asociados con alteraciones metabólicas características del cáncer gástrico. Los valores de clasificación y validación cruzada en PLS-DA indicaron una robustez razonable del modelo, con un error de clasificación medio de 0.52 para el componente principal 1 (GC vs. HE) y de 0.41 en el segundo componente.
+
+Los resultados obtenidos de este estudio resaltan la presencia de perfiles metabólicos alterados en pacientes con cáncer gástrico, particularmente en metabolitos como M4, 2-Furoylglycine (M7) y u233 (M138), que presentan patrones de abundancia distintivos. Estos resultados aportan evidencia preliminar de posibles biomarcadores que podrían contribuir a mejorar el diagnóstico y la comprensión de la fisiopatología del cáncer gástrico. No obstante, se requieren estudios adicionales para validar estos hallazgos en cohortes de mayor tamaño y en otros contextos clínicos, lo cual permitiría consolidar el papel de estos metabolitos como indicadores específicos de GC.
+
+Este análisis metabolómico proporciona una base significativa para futuros estudios que busquen integrar datos de múltiples ómicas y enfoques bioinformáticos avanzados para el desarrollo de herramientas diagnósticas y pronósticas en cáncer gástrico.
+
+
+
 ```{r}
 
 # Cargar las librerías
@@ -38,7 +57,7 @@ library(SummarizedExperiment)
 
 ```
 
-# Objetivos del Estudio
+# *Objetivos del Estudio*
 
 El objetivo principal de este trabajo es realizar un análisis exploratorio de unos datos de metabolomica, descargados de un repositorio github, utilizando el programa estadístico R y las librerías para análisis de datos ómicos integradas en Bioconductor.
 
@@ -48,7 +67,7 @@ Como objetivos específicos podemos señalar los siguientes:
 
 2. Llevar a cabo un análisis exploratorio de los datos que proporcionar una visión general de las variables y de los individuos.
 
-# Materiales y Métodos origen fuente y naturaleza de los datos, herramientas informaticas y bioinformaticas, procedimiento general del analisis, métodos usados
+# *Materiales y Métodos*
 
 Es recomendable evaluar la calidad de los datos y eliminar cualquier metabolito que esté mal medido antes de realizar análisis estadísticos o aplicar modelos de aprendizaje automático (Broadhurst et al., 2018). En el caso del conjunto de datos de Cáncer Gástrico por RMN utilizado en este ejemplo, ya hemos calculado algunas estadísticas básicas para cada metabolito, las cuales se encuentran registradas en la tabla Peak. En este cuaderno, solo se mantendrán los metabolitos que cumplan con los siguientes requisitos:
 
@@ -56,10 +75,11 @@ Un QC-RSD inferior al 20%
 Menos del 10% de los valores están ausentes
 Una vez que los datos sean depurados, se indicará la cantidad de picos que quedan.
 
-# Resultados
 
-# Discusión, Limitaciones y conclusiones del estudio
 
+# *Resultados*
+
+## Estructura de los datos y del estudio
 
 
 ```{r}
@@ -80,7 +100,7 @@ data_df <- data_df[data_df$SampleType != "QC", ]
 
 ```
 
-
+Extraemos del archivo las columnas que empiezan con M (Metabolito)
 
 ```{r}
 # Extraer la matriz de datos de las columnas que empiezan con 'M'
@@ -89,14 +109,15 @@ data_matrix <- as.matrix(data_df[, metabolite_columns])
 ```
 
 
-
+Trasponemos la matriz de datos ya que el SummarizedExperiment necesita que las muestras sean columnas y los metabolitos (variables) filas
 
 ```{r}
 # Transponer la matriz para que las muestras estén en las columnas
 data_matrix <- t(data_matrix)
+
 ```
 
-
+Ahora creamos los metadatos del SumarizedExperiment, en los metadatos de las muestras, está el grupo o Class = GC, gastic cancer, paciente sano, HE y BN, cámcer benigno. SAmpleID, el identificador de la muestra y SampleType, donde sample es una muestra humana y QC una muestra de control de calidad por lotes.
 
 ```{r}
 # Crear los metadatos de las muestras (SampleID, SampleType, Class) después del filtrado
@@ -107,16 +128,19 @@ colData <- DataFrame(
 )
 ```
 
+para los metadatos de las filas, de la hoja Peak, obtenemos la información. Name M1, M2..., Label con el nombre del metabolito en concreto, y dos datos más para el control de calidad, el Perc_Missing, que es el porcentaje de datos faltantes, y el QC_RSD, que es la variabilidad entre muestras de ese metabolito.
 
 ```{r}
 # Crear los metadatos de los metabolitos (Name, Label)
 rowData <- DataFrame(
     Name = metabolites_df$Name,
-    Label = metabolites_df$Label
+    Label = metabolites_df$Label,
+    Perc_missing = metabolites_df$Perc_missing,
+    QC_RSD = metabolites_df$QC_RSD
 )
 ```
 
-
+Creamos el objeto se, calse SummarizedExperiment, con los datos trabajados hasta ahora.
 
 ```{r}
 # Crear el objeto SummarizedExperiment
@@ -130,14 +154,321 @@ se <- SummarizedExperiment(
 )
 ```
 
+Filtramos el dataset por los controles de calidad, donde solo aceptamos metabolitos con menos de un 20% de variabilidad entre datos, y menos de un 10% de datos faltantes.
 
 ```{r}
-# Mostrar el objeto
-print(se)
+# Filtrar los metabolitos según los criterios de calidad
+se_filtered <- se[
+  rowData(se)$Perc_missing < 10 & rowData(se)$QC_RSD < 20, 
+  ]
 ```
 
 
-## Apendices
+```{r}
+# Mostrar el objeto
+print(se_filtered)
+```
+
+
+## 1. Análisis Descriptivo Inicial
+
+```{r, echo=FALSE, eval=FALSE}
+install.packages("ggplot2")
+```
+
+
+```{r}
+# Cargar las librerías necesarias
+library(SummarizedExperiment)
+library(ggplot2)
+```
+
+
+
+## 2. Visualización de Datos
+
+
+
+## 3. Análisis de Variabilidad y Control de Calidad
+1. Análisis de Varianza (ANOVA) o Test de Bartlett: Comparar la variabilidad de los metabolitos entre grupos (p. ej., control sano, tumor benigno, cáncer gástrico) para evaluar diferencias significativas en la dispersión.
+
+```{r}
+# Extraer la matriz de datos y la información de los grupos
+data_matrix <- assay(se_filtered, "counts")
+class_labels <- colData(se_filtered)$Class
+
+```
+
+```{r}
+# Aplicar el Test de Bartlett a cada metabolito
+bartlett_results <- apply(data_matrix, 1, function(x) {
+  bartlett.test(x ~ class_labels)$p.value
+})
+
+# Mostrar los resultados de los primeros 10 metabolitos
+bartlett_results_df <- data.frame(
+  Metabolite = rownames(data_matrix),
+  P_Value = bartlett_results
+)
+print(bartlett_results_df)
+
+```
+Si un p-valor es menor que 0.05, sugiere que hay una diferencia significativa en la variabilidad de ese metabolito entre los grupos.
+
+```{r}
+# Aplicar ANOVA a cada metabolito
+anova_results <- apply(data_matrix, 1, function(x) {
+  summary(aov(x ~ class_labels))[[1]][["Pr(>F)"]][1]
+})
+
+# Mostrar los resultados de los primeros 10 metabolitos
+anova_results_df <- data.frame(
+  Metabolite = rownames(data_matrix),
+  P_Value = anova_results
+)
+print(anova_results_df)
+
+```
+
+Un p-valor bajo (< 0.05) indica diferencias significativas en las medias de las concentraciones entre los grupos
+
+
+2. PCA (Análisis de Componentes Principales):
+* Realizar un PCA para visualizar la separación global entre las clases (GC, BN, HE) y evaluar la presencia de agrupamientos claros o patrones.
+* Este paso también ayuda a identificar la necesidad de normalización adicional si hay un sesgo por efecto de lote o variabilidad técnica.
+
+El PCA se usa para reducir la dimensionalidad de los datos y visualizar cómo se agrupan las muestras según los metabolitos.
+
+```{r}
+# Función para imputar valores faltantes con la mediana de cada fila (metabolito)
+data_matrix <- assay(se_filtered, "counts")
+data_matrix <- apply(data_matrix, 1, function(x) {
+  x[is.na(x) | is.infinite(x)] <- median(x, na.rm = TRUE)
+  return(x)
+})
+data_matrix <- t(data_matrix) 
+
+```
+
+
+```{r}
+# Cargar la librería para el PCA
+library(ggplot2)
+
+# Transponer la matriz de datos para que las muestras sean filas y los metabolitos columnas
+pca_data <- t(data_matrix)
+
+# Realizar el PCA
+pca_result <- prcomp(pca_data, scale. = TRUE)  # scale. = TRUE para normalizar los datos
+
+# Crear un data frame con los resultados del PCA
+pca_df <- data.frame(
+  PC1 = pca_result$x[, 1],
+  PC2 = pca_result$x[, 2],
+  Class = class_labels
+)
+
+# Gráfico del PCA
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Class)) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(
+    title = "Análisis de Componentes Principales (PCA)",
+    x = "Componente Principal 1",
+    y = "Componente Principal 2"
+  ) +
+  scale_color_manual(values = c("red", "blue", "green"))
+
+```
+Como podemos ver los grupos se diferencian bien, así podemos afirmar que los grupos GC, BN, HE tiene diferentes patrones de expresion de los metabolitos, sobre todo se diferencia el grupo de interes GC.
+
+## Análisis Univariado
+Compararemos las concentraciones de cada metabolito entre las clases utilizando la prueba de t de Student o la prueba de Mann-Whitney U. Luego, aplicaremos una corrección por múltiples comparaciones
+
+```{r, eval=FALSE}
+install.packages("dplyr")
+
+```
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+# Extraer los datos
+data_matrix <- assay(se_filtered, "counts")
+class_labels <- colData(se_filtered)$Class
+
+# Inicializar un data frame para almacenar los resultados
+results <- data.frame(Metabolite = rownames(data_matrix), p_GC_HE = NA, p_GC_BN = NA)
+
+# Realizar las comparaciones entre grupos
+for (i in 1:nrow(data_matrix)) {
+  # Extraer concentraciones del metabolito actual
+  metabolite_data <- data_matrix[i, ]
+  
+  # Comparación entre GC y HE
+  results$p_GC_HE[i] <- wilcox.test(metabolite_data[class_labels == "GC"], 
+                                     metabolite_data[class_labels == "HE"])$p.value
+  
+  # Comparación entre GC y BN
+  results$p_GC_BN[i] <- wilcox.test(metabolite_data[class_labels == "GC"], 
+                                     metabolite_data[class_labels == "BN"])$p.value
+}
+
+# Aplicar corrección por múltiples comparaciones (FDR de Benjamini-Hochberg)
+results <- results %>%
+  mutate(
+    p_adj_GC_HE = p.adjust(p_GC_HE, method = "BH"),
+    p_adj_GC_BN = p.adjust(p_GC_BN, method = "BH")
+  )
+
+# Mostrar los primeros resultados
+print(results)
+
+```
+Los valores ajustados (p_adj_GC_HE y p_adj_GC_BN) reflejan la significancia después de la corrección por múltiples comparaciones. Un valor ajustado bajo (< 0.05) sugiere una diferencia significativa entre los grupos para ese metabolito.
+
+## Análisis de Significancia Biológica: Cálculo de Fold Change
+
+```{r}
+# Calcular fold change
+results <- results %>%
+  mutate(
+    fold_change_GC_HE = apply(data_matrix, 1, function(x) {
+      mean(x[class_labels == "GC"], na.rm = TRUE) / mean(x[class_labels == "HE"], na.rm = TRUE)
+    }),
+    fold_change_GC_BN = apply(data_matrix, 1, function(x) {
+      mean(x[class_labels == "GC"], na.rm = TRUE) / mean(x[class_labels == "BN"], na.rm = TRUE)
+    })
+  )
+
+# Mostrar los primeros resultados
+print(results)
+
+```
+Un "fold change" mayor que 1 indica que el metabolito es más abundante en el grupo GC en comparación con HE o BN, mientras que un valor menor que 1 indica menor abundancia en GC.
+
+## Analisis Multivariado
+
+1. PLS-DA (Partial Least Squares Discriminant Analysis)
+
+```{r}
+# Instala mixOmics si no lo tienes
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("mixOmics")
+
+library(mixOmics)
+
+```
+
+Configuramos los datos para PLS-DA
+```{r}
+# Extraer la matriz de datos y etiquetas de clase
+data_matrix <- t(assay(se_filtered, "counts"))  # Transponer para que las muestras sean filas
+class_labels <- colData(se_filtered)$Class
+
+# Convertir las etiquetas de clase a un factor
+class_labels <- as.factor(class_labels)
+
+```
+
+Ralizamos el PLS
+
+```{r}
+# Ejecutar PLS-DA
+plsda_result <- plsda(X = data_matrix, Y = class_labels, ncomp = 2)  # ncomp = 2 componentes
+
+# Graficar el PLS-DA
+plotIndiv(plsda_result, group = class_labels, legend = TRUE, 
+          title = "PLS-DA de Metabolitos", ellipse = TRUE, comp = c(1, 2))
+
+```
+plotIndiv muestra la discriminación entre clases. El PLS-DA separa bien los grupos, lo que demuestra haber una clara diferencia entre grupos
+
+Evaluar la Robustez del Modelo con Validación Cruzad
+
+```{r}
+# Validación cruzada con mixOmics
+set.seed(625745221)  # Para reproducibilidad
+cv_result <- perf(plsda_result, validation = "Mfold", folds = 5, progressBar = TRUE, nrepeat = 10)
+
+# Ver resultados de validación cruzada
+print(cv_result)
+
+```
+error rate
+```{r}
+# Ver tasa de error
+print(cv_result$error.rate)
+
+```
+
+Error rate por clase
+```{r}
+# Tasa de error por clase
+print(cv_result$error.rate.class)
+
+```
+
+Validación Cruzada: El resultado de la validación cruzada (cv_result) ayuda a verificar si el modelo es robusto y no sobreajustado.
+
+```{r}
+# Graficar resultados de validación cruzada
+plot(cv_result)
+
+```
+Podemos ver cómo varía el error con el número de componentes, lo cual es útil para decidir cuántos componentes incluir en el modelo PLS-DA final. (Aunque aquí solo hemos ido con 2 componentes, podriamos incluir otro CP )
+
+Analizar las Cargas (Loadings) para Identificar Metabolitos Relevantes
+
+```{r}
+# Extraer y visualizar las cargas para interpretar los metabolitos que más contribuyen
+loadings <- plsda_result$loadings$X  # Cargas para las variables
+
+# Mostrar los primeros metabolitos relevantes
+top_metabolites <- rownames(loadings)[order(abs(loadings[, 1]), decreasing = TRUE)[1:10]]
+print(top_metabolites)
+
+```
+
+```{r}
+# Crear un data frame con IDs y Labels de los metabolitos en rowData
+metabolite_info <- data.frame(
+  ID = rownames(rowData(se_filtered)),
+  Label = rowData(se_filtered)$Label
+)
+
+# Filtrar para obtener solo los metabolitos en top_metabolites y asegurar el orden correcto
+top_metabolite_info <- metabolite_info[match(top_metabolites, metabolite_info$ID), ]
+
+# Mostrar los resultados correctamente alineados
+print(top_metabolite_info)
+
+
+```
+Podemos ver cuales son los metabolitos que serían más interesantes de estudiar como biomarcadores de este cancer
+
+# *Discusión, Limitaciones y conclusiones del estudio*
+
+Según análisis de la varianza, se reveló diferencias significativas en la variabilidad de metabolitos específicos entre grupos, evaluados a través del test de Bartlett. Por ejemplo, los metabolitos M4, M5, M7, y M8 presentaron p-valores muy bajos (e.g., M4 con 𝑝<4.2×10−7 p<4.2×10−7), sugiriendo una variabilidad significativa en cáncer gástrico.
+
+Como se pudo observar en  el análisis de Significancia Biológica y Fold Change, hubo un aumento en la concentración de varios metabolitos en cáncer gástrico en comparación con controles sanos. El fold change de M4, por ejemplo, mostró un aumento significativo en GC respecto a HE, con valores ajustados de p = 0.028 para la comparación GC-HE.
+
+La proyección de las muestras en un análisis de componentes principales (PCA) indicó una clara separación entre los grupos. Además, el modelo PLS-DA evidenció una separación robusta entre GC, BN y HE. Los metabolitos M138, M134 y M118 se destacaron como importantes en la discriminación entre grupos.
+
+La validación cruzada del modelo PLS-DA mostró una tasa de error de clasificación moderada. Para el componente principal 1, el error de clasificación promedio fue de 0.52 para GC frente a HE y de 0.41 en el segundo componente. Este resultado sugiere que el modelo presenta una capacidad para discriminar razonable, para distinguir entre cáncer gástrico y otros estados clínicos, aunque podría beneficiarse de otras optimizaciones adicionales.
+
+Así pues para finalizar, este estudio ha identificado metabolitos diferenciadores en cáncer gástrico, proporcionando un marco preliminar para el desarrollo de biomarcadores diagnósticos. Los hallazgos indican una alteración en el perfil metabólico de los pacientes con GC, especialmente en metabolitos como M4(1-Methylnicotinamide	), M7 (2-Furoylglycine) y M138 (metabolito u233), que podrían ser interesantes para seguir trabajando en ellos en estudios adicionales.
+
+Sin embargo, sería crucial validar estos resultados en cohortes más amplias y en otros contextos clínicos para confirmar su aplicabilidad, como además, sería interesante añadir estudios con datos como el tiempo de supervivencia para realizar análisis de Supervivencia y Pronóstico para ver si los perfiles metabólicos tienen algún valor pronóstico (p. ej., análisis de Kaplan-Meier o modelos de Cox), y así identificar metabolitos específicos que podrían servir como biomarcadores para la detección precoz del cáncer gástrico o para predecir la respuesta al tratamiento.
+
+# *Apendices*
+
+Este estudio se encuentra en el repositorio github
+https://github.com/GilCaraballo/PEC1_Datos_Omicos
 
 
 
