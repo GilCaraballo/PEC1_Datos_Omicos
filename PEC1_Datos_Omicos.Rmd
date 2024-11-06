@@ -50,15 +50,15 @@ Como objetivos específicos podemos señalar los siguientes:
 
 # Materiales y Métodos origen fuente y naturaleza de los datos, herramientas informaticas y bioinformaticas, procedimiento general del analisis, métodos usados
 
+Es recomendable evaluar la calidad de los datos y eliminar cualquier metabolito que esté mal medido antes de realizar análisis estadísticos o aplicar modelos de aprendizaje automático (Broadhurst et al., 2018). En el caso del conjunto de datos de Cáncer Gástrico por RMN utilizado en este ejemplo, ya hemos calculado algunas estadísticas básicas para cada metabolito, las cuales se encuentran registradas en la tabla Peak. En este cuaderno, solo se mantendrán los metabolitos que cumplan con los siguientes requisitos:
 
+Un QC-RSD inferior al 20%
+Menos del 10% de los valores están ausentes
+Una vez que los datos sean depurados, se indicará la cantidad de picos que quedan.
 
 # Resultados
 
 # Discusión, Limitaciones y conclusiones del estudio
-
-## Cargar datos
-
-## Reestructurar datos
 
 
 
@@ -72,17 +72,24 @@ metabolites_df <- read_excel(file_path, sheet = "Peak")
 
 ```
 
+
+
 ```{r}
 # Filtrar las muestras para eliminar las que tienen SampleType = "QC"
 data_df <- data_df[data_df$SampleType != "QC", ]
 
 ```
 
+
+
 ```{r}
 # Extraer la matriz de datos de las columnas que empiezan con 'M'
 metabolite_columns <- grep("^M", names(data_df), value = TRUE)
 data_matrix <- as.matrix(data_df[, metabolite_columns])
 ```
+
+
+
 
 ```{r}
 # Transponer la matriz para que las muestras estén en las columnas
