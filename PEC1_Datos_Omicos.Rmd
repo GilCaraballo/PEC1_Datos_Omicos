@@ -3,23 +3,17 @@ title: "PEC1_Datos_Omicos"
 author: "Raul"
 date: "2024-11-06"
 output:
-  pdf_document:
-    toc: true
-    toc_depth: '3'
   html_document:
     toc: true
     toc_depth: 3
+  pdf_document:
+    toc: true
+    toc_depth: '3'
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 ```
-
-```{r}
-install.packages("tinytex")
-
-```
-
 
 
 ```{r, eval=FALSE}
@@ -75,7 +69,14 @@ Un QC-RSD inferior al 20%
 Menos del 10% de los valores están ausentes
 Una vez que los datos sean depurados, se indicará la cantidad de picos que quedan.
 
+a. Los datos metabolómicos esta´n obtenidos del repositrio github https://github.com/nutrimetabolomics/metaboData/tree/main/Datasets/2023-CIMCBTutorial
 
+b. Metodos utilizados
+
+*Bioniformaticos*: El principal métodos bioinformático que se utiliza es la creación, automática, con el paquete SumarizedExperiment de Bioconductor, de clases contenedoras para datos de metabolomica,
+
+*Estadisticos*: Análisis uni y bivariante de los datos, mediante boxplots y/o histogramas para
+estudiar la forma general de los mismos y Análisis multivariante de los datos, mediante Análisis de Componentes Principales.
 
 # *Resultados*
 
@@ -84,18 +85,16 @@ Una vez que los datos sean depurados, se indicará la cantidad de picos que qued
 
 ```{r}
 
-# Leer las hojas del archivo Excel
-
 file_path <- "GastricCancer_NMR.xlsx"
 data_df <- read_excel(file_path, sheet = "Data")
 metabolites_df <- read_excel(file_path, sheet = "Peak")
 
 ```
 
-
+Filtrar las muestras para eliminar las que tienen SampleType = "QC" ya que no nos interesan los controles de calidad de la RMN de cada lote de muestras.
 
 ```{r}
-# Filtrar las muestras para eliminar las que tienen SampleType = "QC"
+
 data_df <- data_df[data_df$SampleType != "QC", ]
 
 ```
@@ -103,7 +102,7 @@ data_df <- data_df[data_df$SampleType != "QC", ]
 Extraemos del archivo las columnas que empiezan con M (Metabolito)
 
 ```{r}
-# Extraer la matriz de datos de las columnas que empiezan con 'M'
+
 metabolite_columns <- grep("^M", names(data_df), value = TRUE)
 data_matrix <- as.matrix(data_df[, metabolite_columns])
 ```
@@ -112,7 +111,7 @@ data_matrix <- as.matrix(data_df[, metabolite_columns])
 Trasponemos la matriz de datos ya que el SummarizedExperiment necesita que las muestras sean columnas y los metabolitos (variables) filas
 
 ```{r}
-# Transponer la matriz para que las muestras estén en las columnas
+
 data_matrix <- t(data_matrix)
 
 ```
@@ -120,7 +119,7 @@ data_matrix <- t(data_matrix)
 Ahora creamos los metadatos del SumarizedExperiment, en los metadatos de las muestras, está el grupo o Class = GC, gastic cancer, paciente sano, HE y BN, cámcer benigno. SAmpleID, el identificador de la muestra y SampleType, donde sample es una muestra humana y QC una muestra de control de calidad por lotes.
 
 ```{r}
-# Crear los metadatos de las muestras (SampleID, SampleType, Class) después del filtrado
+
 colData <- DataFrame(
     SampleID = data_df$SampleID,
     SampleType = data_df$SampleType,
@@ -131,7 +130,6 @@ colData <- DataFrame(
 para los metadatos de las filas, de la hoja Peak, obtenemos la información. Name M1, M2..., Label con el nombre del metabolito en concreto, y dos datos más para el control de calidad, el Perc_Missing, que es el porcentaje de datos faltantes, y el QC_RSD, que es la variabilidad entre muestras de ese metabolito.
 
 ```{r}
-# Crear los metadatos de los metabolitos (Name, Label)
 rowData <- DataFrame(
     Name = metabolites_df$Name,
     Label = metabolites_df$Label,
@@ -143,7 +141,6 @@ rowData <- DataFrame(
 Creamos el objeto se, calse SummarizedExperiment, con los datos trabajados hasta ahora.
 
 ```{r}
-# Crear el objeto SummarizedExperiment
 se <- SummarizedExperiment(
     assays = list(counts = data_matrix),
     rowData = rowData,
@@ -165,7 +162,6 @@ se_filtered <- se[
 
 
 ```{r}
-# Mostrar el objeto
 print(se_filtered)
 ```
 
@@ -178,7 +174,6 @@ install.packages("ggplot2")
 
 
 ```{r}
-# Cargar las librerías necesarias
 library(SummarizedExperiment)
 library(ggplot2)
 ```
@@ -205,7 +200,6 @@ bartlett_results <- apply(data_matrix, 1, function(x) {
   bartlett.test(x ~ class_labels)$p.value
 })
 
-# Mostrar los resultados de los primeros 10 metabolitos
 bartlett_results_df <- data.frame(
   Metabolite = rownames(data_matrix),
   P_Value = bartlett_results
@@ -221,7 +215,6 @@ anova_results <- apply(data_matrix, 1, function(x) {
   summary(aov(x ~ class_labels))[[1]][["Pr(>F)"]][1]
 })
 
-# Mostrar los resultados de los primeros 10 metabolitos
 anova_results_df <- data.frame(
   Metabolite = rownames(data_matrix),
   P_Value = anova_results
@@ -268,7 +261,6 @@ pca_df <- data.frame(
   Class = class_labels
 )
 
-# Gráfico del PCA
 ggplot(pca_df, aes(x = PC1, y = PC2, color = Class)) +
   geom_point(size = 3) +
   theme_minimal() +
@@ -324,7 +316,6 @@ results <- results %>%
     p_adj_GC_BN = p.adjust(p_GC_BN, method = "BH")
   )
 
-# Mostrar los primeros resultados
 print(results)
 
 ```
@@ -344,7 +335,6 @@ results <- results %>%
     })
   )
 
-# Mostrar los primeros resultados
 print(results)
 
 ```
@@ -355,7 +345,6 @@ Un "fold change" mayor que 1 indica que el metabolito es más abundante en el gr
 1. PLS-DA (Partial Least Squares Discriminant Analysis)
 
 ```{r}
-# Instala mixOmics si no lo tienes
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install("mixOmics")
@@ -367,7 +356,7 @@ library(mixOmics)
 Configuramos los datos para PLS-DA
 ```{r}
 # Extraer la matriz de datos y etiquetas de clase
-data_matrix <- t(assay(se_filtered, "counts"))  # Transponer para que las muestras sean filas
+data_matrix <- t(assay(se_filtered, "counts"))  
 class_labels <- colData(se_filtered)$Class
 
 # Convertir las etiquetas de clase a un factor
@@ -378,10 +367,8 @@ class_labels <- as.factor(class_labels)
 Ralizamos el PLS
 
 ```{r}
-# Ejecutar PLS-DA
 plsda_result <- plsda(X = data_matrix, Y = class_labels, ncomp = 2)  # ncomp = 2 componentes
 
-# Graficar el PLS-DA
 plotIndiv(plsda_result, group = class_labels, legend = TRUE, 
           title = "PLS-DA de Metabolitos", ellipse = TRUE, comp = c(1, 2))
 
@@ -392,16 +379,14 @@ Evaluar la Robustez del Modelo con Validación Cruzad
 
 ```{r}
 # Validación cruzada con mixOmics
-set.seed(625745221)  # Para reproducibilidad
+set.seed(625745221)  
 cv_result <- perf(plsda_result, validation = "Mfold", folds = 5, progressBar = TRUE, nrepeat = 10)
 
-# Ver resultados de validación cruzada
 print(cv_result)
 
 ```
 error rate
 ```{r}
-# Ver tasa de error
 print(cv_result$error.rate)
 
 ```
@@ -416,7 +401,6 @@ print(cv_result$error.rate.class)
 Validación Cruzada: El resultado de la validación cruzada (cv_result) ayuda a verificar si el modelo es robusto y no sobreajustado.
 
 ```{r}
-# Graficar resultados de validación cruzada
 plot(cv_result)
 
 ```
@@ -426,7 +410,7 @@ Analizar las Cargas (Loadings) para Identificar Metabolitos Relevantes
 
 ```{r}
 # Extraer y visualizar las cargas para interpretar los metabolitos que más contribuyen
-loadings <- plsda_result$loadings$X  # Cargas para las variables
+loadings <- plsda_result$loadings$X  
 
 # Mostrar los primeros metabolitos relevantes
 top_metabolites <- rownames(loadings)[order(abs(loadings[, 1]), decreasing = TRUE)[1:10]]
@@ -470,5 +454,237 @@ Sin embargo, sería crucial validar estos resultados en cohortes más amplias y 
 Este estudio se encuentra en el repositorio github
 https://github.com/GilCaraballo/PEC1_Datos_Omicos
 
+```{r, eval=FALSE, include=FALSE}
+knitr::purl("PEC1_Datos_Omicos.Rmd", output = "Apendice_codigo.R", documentation = 0)
 
+```
+
+```{r eval=FALSE}
+
+## 
+## install.packages("readxl")
+## if (!requireNamespace("BiocManager", quietly = TRUE))
+##     install.packages("BiocManager")
+## BiocManager::install("SummarizedExperiment")
+## 
+
+
+# Cargar las librerías
+library(readxl)
+library(SummarizedExperiment)
+
+
+
+file_path <- "GastricCancer_NMR.xlsx"
+data_df <- read_excel(file_path, sheet = "Data")
+metabolites_df <- read_excel(file_path, sheet = "Peak")
+
+
+
+data_df <- data_df[data_df$SampleType != "QC", ]
+
+
+
+metabolite_columns <- grep("^M", names(data_df), value = TRUE)
+data_matrix <- as.matrix(data_df[, metabolite_columns])
+
+
+data_matrix <- t(data_matrix)
+
+
+colData <- DataFrame(
+    SampleID = data_df$SampleID,
+    SampleType = data_df$SampleType,
+    Class = data_df$Class
+)
+
+rowData <- DataFrame(
+    Name = metabolites_df$Name,
+    Label = metabolites_df$Label,
+    Perc_missing = metabolites_df$Perc_missing,
+    QC_RSD = metabolites_df$QC_RSD
+)
+
+se <- SummarizedExperiment(
+    assays = list(counts = data_matrix),
+    rowData = rowData,
+    colData = colData,
+    metadata = list(
+        description = "Columns M1 ... M149 describe metabolite concentrations. Column SampleType indicates whether the sample was a pooled QC or a study sample. Column Class indicates the clinical outcome observed for that individual: GC = Gastric Cancer, BN = Benign Tumor, HE = Healthy Control."
+    )
+)
+
+
+se_filtered <- se[
+  rowData(se)$Perc_missing < 10 & rowData(se)$QC_RSD < 20, 
+  ]
+
+print(se_filtered)
+
+## install.packages("ggplot2")
+
+
+library(SummarizedExperiment)
+library(ggplot2)
+
+
+data_matrix <- assay(se_filtered, "counts")
+class_labels <- colData(se_filtered)$Class
+
+
+
+bartlett_results <- apply(data_matrix, 1, function(x) {
+  bartlett.test(x ~ class_labels)$p.value
+})
+
+
+bartlett_results_df <- data.frame(
+  Metabolite = rownames(data_matrix),
+  P_Value = bartlett_results
+)
+print(bartlett_results_df)
+
+
+
+anova_results <- apply(data_matrix, 1, function(x) {
+  summary(aov(x ~ class_labels))[[1]][["Pr(>F)"]][1]
+})
+
+
+anova_results_df <- data.frame(
+  Metabolite = rownames(data_matrix),
+  P_Value = anova_results
+)
+print(anova_results_df)
+
+
+data_matrix <- assay(se_filtered, "counts")
+data_matrix <- apply(data_matrix, 1, function(x) {
+  x[is.na(x) | is.infinite(x)] <- median(x, na.rm = TRUE)
+  return(x)
+})
+data_matrix <- t(data_matrix) 
+
+
+
+library(ggplot2)
+
+pca_data <- t(data_matrix)
+
+pca_result <- prcomp(pca_data, scale. = TRUE)  # scale. = TRUE para normalizar los datos
+
+pca_df <- data.frame(
+  PC1 = pca_result$x[, 1],
+  PC2 = pca_result$x[, 2],
+  Class = class_labels
+)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Class)) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  labs(
+    title = "Análisis de Componentes Principales (PCA)",
+    x = "Componente Principal 1",
+    y = "Componente Principal 2"
+  ) +
+  scale_color_manual(values = c("red", "blue", "green"))
+
+
+## install.packages("dplyr")
+## 
+
+library(dplyr)
+
+data_matrix <- assay(se_filtered, "counts")
+class_labels <- colData(se_filtered)$Class
+
+results <- data.frame(Metabolite = rownames(data_matrix), p_GC_HE = NA, p_GC_BN = NA)
+
+for (i in 1:nrow(data_matrix)) {
+  # Extraer concentraciones del metabolito actual
+  metabolite_data <- data_matrix[i, ]
+  
+  # Comparación entre GC y HE
+  results$p_GC_HE[i] <- wilcox.test(metabolite_data[class_labels == "GC"], 
+                                     metabolite_data[class_labels == "HE"])$p.value
+  
+  # Comparación entre GC y BN
+  results$p_GC_BN[i] <- wilcox.test(metabolite_data[class_labels == "GC"], 
+                                     metabolite_data[class_labels == "BN"])$p.value
+}
+
+results <- results %>%
+  mutate(
+    p_adj_GC_HE = p.adjust(p_GC_HE, method = "BH"),
+    p_adj_GC_BN = p.adjust(p_GC_BN, method = "BH")
+  )
+
+print(results)
+
+
+results <- results %>%
+  mutate(
+    fold_change_GC_HE = apply(data_matrix, 1, function(x) {
+      mean(x[class_labels == "GC"], na.rm = TRUE) / mean(x[class_labels == "HE"], na.rm = TRUE)
+    }),
+    fold_change_GC_BN = apply(data_matrix, 1, function(x) {
+      mean(x[class_labels == "GC"], na.rm = TRUE) / mean(x[class_labels == "BN"], na.rm = TRUE)
+    })
+  )
+
+print(results)
+
+
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("mixOmics")
+
+library(mixOmics)
+
+
+data_matrix <- t(assay(se_filtered, "counts"))  # Transponer para que las muestras sean filas
+class_labels <- colData(se_filtered)$Class
+
+class_labels <- as.factor(class_labels)
+
+
+plsda_result <- plsda(X = data_matrix, Y = class_labels, ncomp = 2)  # ncomp = 2 componentes
+
+plotIndiv(plsda_result, group = class_labels, legend = TRUE, 
+          title = "PLS-DA de Metabolitos", ellipse = TRUE, comp = c(1, 2))
+
+
+set.seed(625745221)  # Para reproducibilidad
+cv_result <- perf(plsda_result, validation = "Mfold", folds = 5, progressBar = TRUE, nrepeat = 10)
+
+print(cv_result)
+
+
+print(cv_result$error.rate)
+
+
+print(cv_result$error.rate.class)
+
+
+plot(cv_result)
+
+
+loadings <- plsda_result$loadings$X  # Cargas para las variables
+
+top_metabolites <- rownames(loadings)[order(abs(loadings[, 1]), decreasing = TRUE)[1:10]]
+print(top_metabolites)
+
+
+metabolite_info <- data.frame(
+  ID = rownames(rowData(se_filtered)),
+  Label = rowData(se_filtered)$Label
+)
+
+top_metabolite_info <- metabolite_info[match(top_metabolites, metabolite_info$ID), ]
+
+print(top_metabolite_info)
+
+
+
+```
 
