@@ -2,7 +2,12 @@
 title: "PEC1_Datos_Omicos"
 author: "Raul"
 date: "2024-11-06"
-output: html_document
+output: 
+  html_document:
+    toc: true      # Incluir tabla de contenido
+    toc_depth: 3   # Profundidad de la tabla de contenido
+    theme: cerulean # Tema para el documento HTML
+  pdf_document: default # Salida como PDF
 ---
 
 ```{r setup, include=FALSE}
@@ -11,52 +16,121 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-<<<<<<< HEAD
-
-## Introducción
 
 ```{r}
 
-
-
-```
-
-## Metodos
-=======
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
->>>>>>> c0c03d5b29732a1b701663d9761180ddef25a861
-
-```{r}
+install.packages("readxl")
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install("SummarizedExperiment")
 
 ```
 
 <<<<<<< HEAD
 
-## Conclusiones
+# Abstract
 
+```{r}
+
+# Cargar las librerías
+library(readxl)
+library(SummarizedExperiment)
+
+```
+
+# Objetivos del Estudio
+
+El objetivo principal de este trabajo es realizar un análisis exploratorio de unos datos de metabolomica, descargados de un repositorio github, utilizando el programa estadístico R y las librerías para análisis de datos ómicos integradas en Bioconductor.
+
+Como objetivos específicos podemos señalar los siguientes:
+
+1. Identificar un conjunto de datos (“dataset”) de interés en la tabla proporcionada y descargarlo para crear, un objeto de clase SummarizedExperiment con los datos de expresión y sus meta-datos.
+
+2. Llevar a cabo un análisis exploratorio de los datos que proporcionar una visión general de las variables y de los individuos.
+
+# Materiales y Métodos origen fuente y naturaleza de los datos, herramientas informaticas y bioinformaticas, procedimiento general del analisis, métodos usados
+
+
+
+# Resultados
+
+# Discusión, Limitaciones y conclusiones del estudio
+
+## Cargar datos
+
+## Reestructurar datos
+
+
+
+```{r}
+
+# Leer las hojas del archivo Excel
+
+file_path <- "GastricCancer_NMR.xlsx"
+data_df <- read_excel(file_path, sheet = "Data")
+metabolites_df <- read_excel(file_path, sheet = "Peak")
+
+```
+
+```{r}
+# Filtrar las muestras para eliminar las que tienen SampleType = "QC"
+data_df <- data_df[data_df$SampleType != "QC", ]
+
+```
+
+```{r}
+# Extraer la matriz de datos de las columnas que empiezan con 'M'
+metabolite_columns <- grep("^M", names(data_df), value = TRUE)
+data_matrix <- as.matrix(data_df[, metabolite_columns])
+```
+
+```{r}
+# Transponer la matriz para que las muestras estén en las columnas
+data_matrix <- t(data_matrix)
+```
+
+
+
+```{r}
+# Crear los metadatos de las muestras (SampleID, SampleType, Class) después del filtrado
+colData <- DataFrame(
+    SampleID = data_df$SampleID,
+    SampleType = data_df$SampleType,
+    Class = data_df$Class
+)
+```
+
+
+```{r}
+# Crear los metadatos de los metabolitos (Name, Label)
+rowData <- DataFrame(
+    Name = metabolites_df$Name,
+    Label = metabolites_df$Label
+)
+```
+
+
+
+```{r}
+# Crear el objeto SummarizedExperiment
+se <- SummarizedExperiment(
+    assays = list(counts = data_matrix),
+    rowData = rowData,
+    colData = colData,
+    metadata = list(
+        description = "Columns M1 ... M149 describe metabolite concentrations. Column SampleType indicates whether the sample was a pooled QC or a study sample. Column Class indicates the clinical outcome observed for that individual: GC = Gastric Cancer, BN = Benign Tumor, HE = Healthy Control."
+    )
+)
+```
+
+
+```{r}
+# Mostrar el objeto
+print(se)
+```
 
 
 ## Apendices
 
 
 
-
-=======
->>>>>>> c0c03d5b29732a1b701663d9761180ddef25a861
